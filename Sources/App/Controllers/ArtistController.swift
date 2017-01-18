@@ -3,6 +3,18 @@ import HTTP
 
 final class ArtistController: ResourceRepresentable {
     
+    func addRoutes(drop: Droplet) {
+        let group = drop.grouped("artists")
+        
+        group.get(handler: index)
+        group.post(handler: create)
+        group.get(Artist.self, handler: show)
+        group.patch(Artist.self, handler: update)
+        group.delete(Artist.self, handler: delete)
+        group.get(Artist.self, "albums", handler: albumsIndex)
+        
+    }
+    
     func index(request: Request) throws -> ResponseRepresentable {
         return try JSON(node: Artist.all().makeNode())
     }
@@ -40,6 +52,11 @@ final class ArtistController: ResourceRepresentable {
         )
     }
     
+    
+    func albumsIndex(request: Request, artist: Artist) throws -> ResponseRepresentable {
+        let children = try artist.albums()
+        return try JSON(node: children.makeNode())
+    }
 }
 
 extension Request {

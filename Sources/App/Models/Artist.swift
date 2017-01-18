@@ -50,3 +50,9 @@ final class Artist: Model {
     }
     
 }
+
+extension Artist {
+    func albums() throws -> [Album] {
+        return try children(nil, Album.self).all()
+    }
+}

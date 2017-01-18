@@ -16,24 +16,28 @@ final class Album: Model {
     var exists: Bool = false
     
     var title: String
+    var artistId: Node?
     
     
-    init(title: String) {
+    init(title: String, artistId: Node? = nil) {
         self.id = nil
         self.title = title
+        self.artistId = artistId
     }
     
     
     init(node: Node, in context: Context) throws {
         id = try node.extract("id")
         title = try node.extract("title")
+        artistId = try node.extract("artist_id")
     }
     
     
     func makeNode(context: Context) throws -> Node {
         return try Node(node: [
             "id": id,
-            "title": title
+            "title": title,
+            "artist_id": artistId
             ])
     }
     
@@ -42,6 +46,7 @@ final class Album: Model {
         try database.create("albums") { albums in
             albums.id()
             albums.string("title")
+            albums.parent(Artist.self, optional: false)
         }
     }
     
@@ -49,4 +54,10 @@ final class Album: Model {
         try database.delete("albums")
     }
     
+}
+    
+extension Album {
+    func artist() throws -> Artist? {
+        return try parent(artistId, nil, Artist.self).get()
+    }
 }

@@ -13,9 +13,11 @@ drop.get { req in
 }
 
 let artists = ArtistController()
-drop.resource("artists", artists)
+//drop.resource("artists", artists)
+artists.addRoutes(drop: drop)
 
 let albums = AlbumController()
-drop.resource("albums", albums)
+//drop.resource("albums", albums)
+albums.addRoutes(drop: drop)
 
 drop.run()
