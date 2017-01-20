@@ -35,6 +35,7 @@ public final class User: Model {
         static let lastPasswordUpdate = "last_password_update"
         static let salt = "salt"
         static let secret = "secret"
+        static let token = "token"              // Added by Dan
     }
     
     public var exists = false
@@ -45,25 +46,29 @@ public final class User: Model {
     fileprivate var secret: Secret
     fileprivate var salt: Salt
     fileprivate var lastPasswordUpdate: Date
+    var token: String?
     
-    convenience init(email: Valid<Email>, username: Valid<Username>, salt: Salt, secret: Secret) {
+    convenience init(email: Valid<Email>, username: Valid<Username>, salt: Salt, secret: Secret, token: String?) {
         self.init(email: email,
                   username: username,
                   salt: salt,
                   secret: secret,
-                  lastPasswordUpdate: Date())
+                  lastPasswordUpdate: Date(),
+                  token: token)
     }
     
     init(email: Valid<Email>,
          username: Valid<Username>,
          salt: Salt,
          secret: Secret,
-         lastPasswordUpdate: Date) {
+         lastPasswordUpdate: Date,
+         token: String?) {
         self.email = email.value
         self.lastPasswordUpdate = lastPasswordUpdate
         self.username = username.value
         self.salt = salt
         self.secret = secret
+        self.token = token
     }
     
     // NodeInitializable
@@ -75,10 +80,37 @@ public final class User: Model {
                                               transform: Date.init(timeIntervalSince1970:))
         salt = try node.extract(Constants.salt)
         secret = try node.extract(Constants.secret)
+        token = try node.extract(Constants.token)
     }
     
-    static func find(by email: Email) throws -> User? {
+    static func find(byEmail email: Email) throws -> User? {
         return try User.query().filter(Constants.email, email.value).first()
+    }
+    
+    static func find(byToken token: String) throws -> User? {
+        return try User.query().filter(Constants.token, token).first()
+    }
+    
+    static func getUserFromAuthorizationHeader(request: Request) throws -> User {
+        guard var token = request.headers["Autorization"]?.string else {
+            throw Abort.custom(status: .badRequest, message: "Missing token")
+        }
+        token = token.replacingOccurrences(of: "Bearer ", with: "")
+        
+        guard let user = try User.find(byToken: token) else {
+            throw Abort.notFound
+        }
+        
+        //Ommiting JWT validation if token is found in DB
+        
+//        let jwt3  = try JWT(token: token)
+//        let isValid = try jwt3.verifySignatureWith(HS256(key: "default-key"))
+//        
+//        if !isValid {
+//            throw Abort.custom(status: .unauthorized, message: "Invalid credentials")
+//        }
+        
+        return user
     }
 }
 
@@ -101,7 +133,8 @@ extension User {
             Constants.username: username.value,
             Constants.lastPasswordUpdate: lastPasswordUpdate.timeIntervalSince1970,
             Constants.salt: salt,
-            Constants.secret: secret
+            Constants.secret: secret,
+            Constants.token: token
             ])
     }
 }
@@ -116,6 +149,7 @@ extension User {
             users.string(Constants.username)
             users.string(Constants.salt)
             users.string(Constants.secret)
+            users.string(Constants.token)
         }
     }
     
@@ -170,7 +204,7 @@ extension Request {
 extension UserCredentials {
     fileprivate func user() throws -> User {
         guard
-            let user = try User.find(by: email),
+            let user = try User.find(byEmail: email),
             try hashPassword(using: user.salt).secret == user.secret else {
                 throw Abort.custom(status: .badRequest,
                                    message: "User not found or incorrect password")
@@ -194,7 +228,13 @@ extension AuthenticatedUserCredentials {
 }
 
 extension User {
-    func albums() throws -> [Album] {
-        return try children(nil, Album.self).all()
+    func albums() -> [Album] {
+        do {
+            return try children(nil, Album.self).all()
+        } catch {
+            print("Problem")
+        }
+        
+        return []
     }
 }

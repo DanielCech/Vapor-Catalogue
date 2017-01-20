@@ -1,5 +1,6 @@
 import Vapor
 import HTTP
+import VaporJWT
 
 final class AlbumController {
     
@@ -16,7 +17,8 @@ final class AlbumController {
     }
     
     func index(request: Request) throws -> ResponseRepresentable {
-        return try JSON(node: Album.all().makeNode())
+        let user = try User.getUserFromAuthorizationHeader(request: request)
+        return try JSON(node: user.albums().makeNode())
     }
     
     func create(request: Request) throws -> ResponseRepresentable {

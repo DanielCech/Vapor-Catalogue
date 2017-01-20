@@ -8,7 +8,7 @@ import Vapor
 import VaporJWT
 
 public final class AuthController {
-    typealias CreateUser = (Valid<Email>, Valid<Username>, User.Salt, User.Secret) -> User
+    typealias CreateUser = (Valid<Email>, Valid<Username>, User.Salt, User.Secret, String?) -> User
     typealias SaveUser = (inout User) throws -> Void
 
     private let hash: HashProtocol
@@ -23,7 +23,7 @@ public final class AuthController {
     public convenience init(jwtKey: Bytes, hash: HashProtocol) {
         self.init(jwtKey: jwtKey,
                   hash: hash,
-                  createUser: User.init(email:username:salt:secret:),
+                  createUser: User.init(email:username:salt:secret:token:),
                   saveUser: { try $0.save() })
     }
 
@@ -64,7 +64,7 @@ public final class AuthController {
         try request.auth.login(credentials, persist: false)
         let user = try request.user()
 
-        return try token(user: user)
+        return try JSON(node: ["token": token(user: user)])
     }
 
     public func signUp(_ request: Request) throws -> ResponseRepresentable {
@@ -75,7 +75,7 @@ public final class AuthController {
         let email: Valid<Email> = try values.email.validated()
         let password: Valid<Password> = try values.password.validated()
 
-        guard let userExists = try? User.find(by: email.value) != nil,
+        guard let userExists = try? User.find(byEmail: email.value) != nil,
             userExists == false else {
                 throw Abort.custom(status: .badRequest, message: "User exists")
         }
@@ -84,10 +84,16 @@ public final class AuthController {
                                           password: password.value,
                                           hash: hash)
         let hashedPassword = try credentials.hashPassword()
-        var user = createUser(email, username, hashedPassword.salt, hashedPassword.secret)
-        try saveUser(&user)
 
-        return try token(user: user)
+        
+        var user = createUser(email, username, hashedPassword.salt, hashedPassword.secret, nil)
+        let storedToken = try token(user: user)
+        user.token = storedToken
+        
+//        try saveUser(&user)
+        try user.save()
+
+        return try JSON(node: ["token": storedToken])
     }
 
     public func updatePassword(_ request: Request) throws -> ResponseRepresentable {
@@ -107,9 +113,10 @@ public final class AuthController {
 
         let hashedPassword = try credentials.hashPassword(newPassword)
         user.update(hashedPassword: hashedPassword, now: passwordUpdate ?? Date())
-        try saveUser(&user)
+//        try saveUser(&user)
+        try user.save()
 
-        return try token(user: user)
+        return try JSON(node: ["token": token(user: user)])
     }
 
     private func token(user: User) throws -> String {
