@@ -14,15 +14,15 @@ final class UserController {
     
     func addRoutes(drop: Droplet) {
         drop.group("users") { users in
-            users.post { req in
-                guard let name = req.data["name"]?.string, let password = req.data["password"]?.string else {
-                    throw Abort.badRequest
-                }
-                
-                var user = User(name: name, password: password)
-                try user.save()
-                return user
-            }
+//            users.post { req in
+//                guard let name = req.data["name"]?.string, let password = req.data["password"]?.string else {
+//                    throw Abort.badRequest
+//                }
+//                
+//                var user = User(name: name, password: password)
+//                try user.save()
+//                return user
+//            }
             
             users.post("login") { req in
                 guard let id = req.data["id"]?.string else {

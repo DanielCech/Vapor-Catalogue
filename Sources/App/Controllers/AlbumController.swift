@@ -1,7 +1,7 @@
 import Vapor
 import HTTP
 
-final class AlbumController: ResourceRepresentable {
+final class AlbumController {
     
     func addRoutes(drop: Droplet) {
         let group = drop.grouped("albums")
@@ -42,15 +42,15 @@ final class AlbumController: ResourceRepresentable {
         return JSON([:])
     }
     
-    func makeResource() -> Resource<Album> {
-        return Resource(
-            index: index,
-            store: create,
-            show: show,
-            modify: update,
-            destroy: delete
-        )
-    }
+//    func makeResource() -> Resource<Album> {
+//        return Resource(
+//            index: index,
+//            store: create,
+//            show: show,
+//            modify: update,
+//            destroy: delete
+//        )
+//    }
     
     func artistShow(request: Request, album: Album) throws -> ResponseRepresentable {
         let artist = try album.artist()
