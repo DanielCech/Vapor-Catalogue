@@ -1,4 +1,7 @@
 import Vapor
+import HTTP
+import Auth
+
 
 final class User: Model {
     var id: Node?
@@ -39,7 +42,6 @@ final class User: Model {
     }
 }
 
-import Auth
 
 extension User: Auth.User {
     static func authenticate(credentials: Credentials) throws -> Auth.User {
@@ -69,7 +71,7 @@ extension User: Auth.User {
     }
 }
 
-import HTTP
+
 
 extension Request {
     func user() throws -> User {
@@ -78,5 +80,11 @@ extension Request {
         }
 
         return user
+    }
+}
+
+extension User {
+    func albums() throws -> [Album] {
+        return try children(nil, Album.self).all()
     }
 }
