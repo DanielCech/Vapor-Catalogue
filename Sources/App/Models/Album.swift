@@ -17,12 +17,14 @@ final class Album: Model {
     
     var title: String
     var artistId: Node?
+    var userId: Node?
     
     
-    init(title: String, artistId: Node? = nil) {
+    init(title: String, artistId: Node? = nil, userId: Node? = nil) {
         self.id = nil
         self.title = title
         self.artistId = artistId
+        self.userId = userId
     }
     
     
@@ -30,6 +32,7 @@ final class Album: Model {
         id = try node.extract("id")
         title = try node.extract("title")
         artistId = try node.extract("artist_id")
+        userId = try node.extract("user_id")
     }
     
     
@@ -37,7 +40,8 @@ final class Album: Model {
         return try Node(node: [
             "id": id,
             "title": title,
-            "artist_id": artistId
+            "artist_id": artistId,
+            "user_id": userId
             ])
     }
     
@@ -47,6 +51,7 @@ final class Album: Model {
             albums.id()
             albums.string("title")
             albums.parent(Artist.self, optional: false)
+            albums.parent(User.self, optional: false)
         }
     }
     
@@ -59,5 +64,10 @@ final class Album: Model {
 extension Album {
     func artist() throws -> Artist? {
         return try parent(artistId, nil, Artist.self).get()
+    }
+    
+    
+    func user() throws -> User? {
+        return try parent(userId, nil, User.self).get()
     }
 }

@@ -15,11 +15,11 @@ final class UserController {
     func addRoutes(drop: Droplet) {
         drop.group("users") { users in
             users.post { req in
-                guard let name = req.data["name"]?.string else {
+                guard let name = req.data["name"]?.string, let password = req.data["password"]?.string else {
                     throw Abort.badRequest
                 }
                 
-                var user = User(name: name)
+                var user = User(name: name, password: password)
                 try user.save()
                 return user
             }
@@ -43,6 +43,14 @@ final class UserController {
                     return try req.user()
                 }
             }
+            
+            users.get(User.self, "albums", handler: albumsIndex)
         }
+    }
+    
+    
+    func albumsIndex(request: Request, user: User) throws -> ResponseRepresentable {
+        let children = try user.albums()
+        return try JSON(node: children.makeNode())
     }
 }

@@ -3,6 +3,7 @@ import Vapor
 final class User: Model {
     var id: Node?
     var name: String
+    var password: String
     var exists: Bool = false
 
     enum Error: Swift.Error {
@@ -11,19 +12,22 @@ final class User: Model {
         case unsupportedCredentials
     }
 
-    init(name: String) {
+    init(name: String, password: String) {
         self.name = name
+        self.password = password
     }
 
     init(node: Node, in context: Context) throws {
         self.id = nil
         self.name = try node.extract("name")
+        self.password = try node.extract("password")
     }
 
     func makeNode(context: Context) throws -> Node {
         return try Node(node: [
             "id": id,
-            "name": name
+            "name": name,
+            "password": password
         ])
     }
 
@@ -31,6 +35,7 @@ final class User: Model {
         try database.create("users") { users in
             users.id()
             users.string("name")
+            users.string("password")
         }
     }
 
@@ -78,5 +83,12 @@ extension Request {
         }
 
         return user
+    }
+}
+
+
+extension User {
+    func albums() throws -> [Album] {
+        return try children(nil, Album.self).all()
     }
 }
