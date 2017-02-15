@@ -13,6 +13,9 @@ final class ArtistController {
         group.delete(Artist.self, handler: delete)
         group.get(Artist.self, "albums", handler: albumsIndex)
         
+        let searchGroup = group.grouped("search")
+        searchGroup.get(handler: search)
+        
     }
     
     func index(request: Request) throws -> ResponseRepresentable {
@@ -56,6 +59,15 @@ final class ArtistController {
     func albumsIndex(request: Request, artist: Artist) throws -> ResponseRepresentable {
         let children = try artist.albums()
         return try JSON(node: children.makeNode())
+    }
+    
+    
+    func search(request: Request) throws -> ResponseRepresentable {
+        if let searchQuery = request.query?["q"]?.string {
+            return try JSON(Artist.query().filter("name", .contains, searchQuery).all().makeNode())
+        }
+        
+        return JSON([])
     }
 }
 
