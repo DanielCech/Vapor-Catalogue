@@ -46,29 +46,25 @@ public final class User: Model {
     fileprivate var secret: Secret
     fileprivate var salt: Salt
     fileprivate var lastPasswordUpdate: Date
-    var token: String?
     
-    convenience init(email: Valid<Email>, username: Valid<Username>, salt: Salt, secret: Secret, token: String?) {
+    convenience init(email: Valid<Email>, username: Valid<Username>, salt: Salt, secret: Secret) {
         self.init(email: email,
                   username: username,
                   salt: salt,
                   secret: secret,
-                  lastPasswordUpdate: Date(),
-                  token: token)
+                  lastPasswordUpdate: Date())
     }
     
     init(email: Valid<Email>,
          username: Valid<Username>,
          salt: Salt,
          secret: Secret,
-         lastPasswordUpdate: Date,
-         token: String?) {
+         lastPasswordUpdate: Date) {
         self.email = email.value
         self.lastPasswordUpdate = lastPasswordUpdate
         self.username = username.value
         self.salt = salt
         self.secret = secret
-        self.token = token
     }
     
     // NodeInitializable
@@ -80,7 +76,6 @@ public final class User: Model {
                                               transform: Date.init(timeIntervalSince1970:))
         salt = try node.extract(Constants.salt)
         secret = try node.extract(Constants.secret)
-        token = try node.extract(Constants.token)
     }
     
     static func find(byEmail email: Email) throws -> User? {
@@ -91,26 +86,28 @@ public final class User: Model {
         return try User.query().filter(Constants.token, token).first()
     }
     
-    static func getUserFromAuthorizationHeader(request: Request) throws -> User {
-        guard var token = request.headers["Autorization"]?.string else {
+    static func getUserIDFromAuthorizationHeader(request: Request) throws -> Int {
+        guard var token = request.auth.header?.bearer?.string else {
             throw Abort.custom(status: .badRequest, message: "Missing token")
         }
-        token = token.replacingOccurrences(of: "Bearer ", with: "")
+//        token = token.replacingOccurrences(of: "Bearer ", with: "")
+        print("Token: \(token)")
         
-        guard let user = try User.find(byToken: token) else {
-            throw Abort.notFound
-        }
+        let jwt3  = try JWT(token: token)
+        let isValid = try jwt3.verifySignatureWith(HS256(key: "default-key"))
         
-        //Ommiting JWT validation if token is found in DB
+        print("JWT: payload", jwt3.payload)
         
-//        let jwt3  = try JWT(token: token)
-//        let isValid = try jwt3.verifySignatureWith(HS256(key: "default-key"))
-//        
 //        if !isValid {
-//            throw Abort.custom(status: .unauthorized, message: "Invalid credentials")
+//            throw Abort.custom(status: .unauthorized, message: "Invalid token")
 //        }
         
-        return user
+        if let userId = jwt3.payload["userId"]?.int {
+            return userId
+        }
+        else {
+            throw Abort.custom(status: .unauthorized, message: "Invalid user ID")
+        }
     }
 }
 
@@ -133,8 +130,7 @@ extension User {
             Constants.username: username.value,
             Constants.lastPasswordUpdate: lastPasswordUpdate.timeIntervalSince1970,
             Constants.salt: salt,
-            Constants.secret: secret,
-            Constants.token: token
+            Constants.secret: secret
             ])
     }
 }
@@ -149,7 +145,6 @@ extension User {
             users.string(Constants.username)
             users.string(Constants.salt)
             users.string(Constants.secret)
-            users.string(Constants.token)
         }
     }
     
@@ -219,9 +214,9 @@ extension AuthenticatedUserCredentials {
             throw Abort.custom(status: .badRequest, message: "User not found")
         }
         
-        guard Int(user.lastPasswordUpdate.timeIntervalSince1970) <= Int(lastPasswordUpdate) else {
-            throw Abort.custom(status: .forbidden, message: "Incorrect password")
-        }
+//        guard Int(user.lastPasswordUpdate.timeIntervalSince1970) <= Int(lastPasswordUpdate) else {
+//            throw Abort.custom(status: .forbidden, message: "Incorrect password")
+//        }
         
         return user
     }

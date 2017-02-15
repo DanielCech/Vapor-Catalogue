@@ -33,18 +33,15 @@ public final class JWTMiddleware: Middleware {
 
 struct AuthenticatedUserCredentials: Credentials {
     let id: String
-    let lastPasswordUpdate: Int
 
     init(node: Node) throws {
         guard
-            let userInfo: Node = try node.extract(User.name),
-            let id: String = try userInfo.extract(User.Constants.id),
-            let lastPasswordUpdate: Int = try userInfo.extract(User.Constants.lastPasswordUpdate)
+//            let userInfo: Node = try node.extract(User.name),
+            let id: String = try node.extract("userId")
             else {
                 throw JWTError.couldNotLogIn
         }
 
         self.id = id
-        self.lastPasswordUpdate = lastPasswordUpdate
     }
 }

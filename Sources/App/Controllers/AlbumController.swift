@@ -17,8 +17,7 @@ final class AlbumController {
     }
     
     func index(request: Request) throws -> ResponseRepresentable {
-        let user = try User.getUserFromAuthorizationHeader(request: request)
-        return try JSON(node: user.albums().makeNode())
+        return try JSON(node: Album.all().makeNode())
     }
     
     func create(request: Request) throws -> ResponseRepresentable {

@@ -8,7 +8,7 @@ import Vapor
 import VaporJWT
 
 public final class AuthController {
-    typealias CreateUser = (Valid<Email>, Valid<Username>, User.Salt, User.Secret, String?) -> User
+    typealias CreateUser = (Valid<Email>, Valid<Username>, User.Salt, User.Secret) -> User
     typealias SaveUser = (inout User) throws -> Void
 
     private let hash: HashProtocol
@@ -23,7 +23,7 @@ public final class AuthController {
     public convenience init(jwtKey: Bytes, hash: HashProtocol) {
         self.init(jwtKey: jwtKey,
                   hash: hash,
-                  createUser: User.init(email:username:salt:secret:token:),
+                  createUser: User.init(email:username:salt:secret:),
                   saveUser: { try $0.save() })
     }
 
@@ -86,14 +86,13 @@ public final class AuthController {
         let hashedPassword = try credentials.hashPassword()
 
         
-        var user = createUser(email, username, hashedPassword.salt, hashedPassword.secret, nil)
-        let storedToken = try token(user: user)
-        user.token = storedToken
-        
-//        try saveUser(&user)
+        var user = createUser(email, username, hashedPassword.salt, hashedPassword.secret)
         try user.save()
+        
+        let newToken = try token(user: user)
+//        user.token = storedToken
 
-        return try JSON(node: ["token": storedToken])
+        return try JSON(node: ["token": newToken])
     }
 
     public func updatePassword(_ request: Request) throws -> ResponseRepresentable {
@@ -121,15 +120,22 @@ public final class AuthController {
 
     private func token(user: User) throws -> String {
         let now = issueDate ?? Date()
-        guard
-            let expirationDate = 10.minutes.from(now) else {
+        guard let expirationDate = 10.minutes.from(now) else {
                 throw Abort.serverError
         }
 
-        let jwt = try JWT(payload: Node([ExpirationTimeClaim(expirationDate), user]),
-                          signer: HS256(key: jwtKey))
-
-        return try jwt.createToken()
+        if let userID = user.id?.int {
+            var payload = Node(ExpirationTimeClaim(expirationDate))
+            payload["userId"] = Node(userID)
+            
+            let jwt = try JWT(payload: payload,
+                              signer: HS256(key: jwtKey))
+            
+            return try jwt.createToken()
+        }
+        else {
+            throw Abort.serverError
+        }
     }
 }
 

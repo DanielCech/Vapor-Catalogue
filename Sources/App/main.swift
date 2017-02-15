@@ -6,7 +6,9 @@ import Vapor
 
 let drop = Droplet()
 
+// Get jwt secret key from configuration
 private let jwtKey = try drop.config.data(for: AppKey.jwt)!.makeBytes()
+
 
 drop.middleware.append(AuthMiddleware<User>())
 drop.middleware.append(JWTMiddleware(jwtKey: jwtKey))
@@ -26,11 +28,9 @@ let users = UserController()
 users.addRoutes(drop: drop)
 
 let artists = ArtistController()
-//drop.resource("artists", artists)
 artists.addRoutes(drop: drop)
 
 let albums = AlbumController()
-//drop.resource("albums", albums)
 albums.addRoutes(drop: drop)
 
 private let authController = AuthController(jwtKey: jwtKey, hash: drop.hash)
