@@ -63,11 +63,23 @@ final class ArtistController {
     
     
     func search(request: Request) throws -> ResponseRepresentable {
+        let results: Node
+        
         if let searchQuery = request.query?["q"]?.string {
-            return try JSON(Artist.query().filter("name", .contains, searchQuery).all().makeNode())
+            results = try Artist.query().filter("name", .contains, searchQuery).all().makeNode()
+        }
+        else {
+            results = []
         }
         
-        return JSON([])
+        if request.accept.prefers("html") {
+            let parameters = try Node(node: [
+                "searchResults": results,
+                ])
+            return try drop.view.make("index", parameters)
+        } else {
+            return JSON(results)
+        }
     }
 }
 

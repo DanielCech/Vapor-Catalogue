@@ -1,0 +1,12 @@
+#extend("base")
+
+#export("body") {
+
+  #loop(searchResults, "result") {
+    <div class="row">
+      <div class="six columns">
+        <p><span>#(result.name)</span></p>
+      </div>
+    </div>
+  }
+}
