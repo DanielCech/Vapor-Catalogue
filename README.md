@@ -1,15 +1,27 @@
-# Basic Template
+# Vapor-Catalogue
 
-A basic vapor template for starting a new Vapor web application. If you're using vapor toolbox, you can use: `vapor new --template=basic`
+Vapor-Catalogue is simple API for CD collection database. Project demonstrates basic concepts of backend development in Swift. 
 
-## 📖 Documentation
+`GET /albums` - all albums in database
+`GET /album/:id` - get one album
+`POST /albums` - create new album
+`DELETE /album/:id` - delete album
 
-Visit the Vapor web framework's [documentation](http://docs.vapor.codes) for instructions on how to use this package.
+`GET /artists` - all artists in database
+`GET /artists/:id` - get one artist
+`POST /artists` - create new artist
+`DELETE /artists/:id` - delete artist
 
-## 💧 Community
+`GET /albums/:id/artists` - artist of particular album
+`GET /artists/:id/albums` - albums of particular artist
 
-Join the welcoming community of fellow Vapor developers in [slack](http://vapor.team).
+`POST /auth/signup` - create user
+`POST /auth/login` - login user
 
-## 🔧 Compatibility
+`GET user/albums` - get all albums of user
+`POST user/album` - create album and assign it to the user
 
-This package has been tested on macOS and Ubuntu.
+`GET artists/search?q=...` - search artist by name
+
+Project implements basic secure user session based on JWT token.
+
